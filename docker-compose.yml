@@ -1,0 +1,24 @@
+# Optional: run against a real PostgreSQL instead of the embedded PGlite database.
+#   docker compose up -d
+#   export DATABASE_URL=postgres://relaydesk:relaydesk@localhost:5432/relaydesk
+#   npm run db:migrate && npm run db:seed
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: relaydesk
+      POSTGRES_PASSWORD: relaydesk
+      POSTGRES_DB: relaydesk
+    ports:
+      - "5432:5432"
+    volumes:
+      - relaydesk-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relaydesk -d relaydesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  relaydesk-pg:
