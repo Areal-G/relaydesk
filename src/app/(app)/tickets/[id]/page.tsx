@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ArrowLeft, Lock, Mail } from "lucide-react";
 import { AiAssistPanel } from "@/components/ai/ai-assist-panel";
 import { ActivityFeed } from "@/components/activity-feed";
+import { CustomerLinkPanel } from "@/components/portal/customer-link";
 import { PageBody, PageHeader, PageSkeleton } from "@/components/shell/page-header";
 import { PriorityLabel, StatusBadge } from "@/components/tickets/badges";
 import { CommentForm } from "@/components/tickets/comment-form";
@@ -21,6 +22,7 @@ import { uuidSchema } from "@/lib/validators/common";
 import { getAiProvider } from "@/server/ai";
 import { requireActor } from "@/server/auth/session";
 import { getUsage } from "@/server/billing/entitlements";
+import { getAppUrl } from "@/server/config";
 import { getDb } from "@/server/db/client";
 import { NotFoundError } from "@/server/errors";
 import {
@@ -174,7 +176,7 @@ async function TicketView({ params }: { params: Promise<{ id: string }> }) {
             {can(actor.role, "ai:use") ? (
               <AiAssistPanel
                 ticketId={ticket.id}
-                providerLabel={provider.name === "mock" ? "Offline mock" : `Claude · ${provider.model}`}
+                providerLabel={provider.name === "mock" ? "Sample AI" : `Claude · ${provider.model}`}
                 used={usage.aiRequestsThisMonth}
                 limit={entitlementsFor(actor.plan).aiRequestsPerMonth}
               />
@@ -194,9 +196,16 @@ async function TicketView({ params }: { params: Promise<{ id: string }> }) {
               />
             </Card>
 
+            {can(actor.role, "ticket:update") ? (
+              <Card>
+                <CardHeader title="Customer link" description={`How ${ticket.requesterName} follows this ticket`} />
+                <CustomerLinkPanel ticketId={ticket.id} appUrl={getAppUrl()} hasLink={ticket.hasCustomerLink} />
+              </Card>
+            ) : null}
+
             {can(actor.role, "audit:read") ? (
               <Card>
-                <CardHeader title="Activity" description="Audit log for this ticket" />
+                <CardHeader title="Activity" description="Everything that has happened on this ticket" />
                 <ActivityFeed items={activity} names={names} now={now} />
               </Card>
             ) : null}

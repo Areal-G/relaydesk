@@ -10,7 +10,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Meter } from "@/components/ui/meter";
 import { ROLE_LABELS, ROLES } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
-import { can, canAssignRole, PERMISSIONS } from "@/lib/permissions";
+import { can, canAssignRole, PERMISSION_LABELS, PERMISSIONS } from "@/lib/permissions";
 import { entitlementsFor } from "@/lib/plans";
 import { requireActor } from "@/server/auth/session";
 import { getUsage } from "@/server/billing/entitlements";
@@ -40,20 +40,23 @@ async function Team() {
     <>
       <PageHeader title="Team & roles" description="Manage who can access this organization and what they can do." />
       <PageBody>
-        <div className="grid gap-6 xl:grid-cols-3">
-          <Card className="xl:col-span-2">
+        {/* grid-cols-1 (minmax(0,1fr)) instead of the implicit auto track: an
+            auto track grows to the members table's full width, which pushed
+            both cards (and the add-member form) off a phone screen. */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <Card className="min-w-0 xl:col-span-2">
             <CardHeader
               title="Members"
               description={`${members.length} people in ${actor.orgName}`}
-              action={<div className="w-56"><Meter label="Seats" used={usage.seatsUsed} limit={seats} /></div>}
+              action={<div className="w-full sm:w-56"><Meter label="Seats" used={usage.seatsUsed} limit={seats} /></div>}
             />
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b border-slate-100 text-left text-xs text-slate-500">
                   <tr>
                     <th scope="col" className="px-5 py-2.5 font-medium">Member</th>
-                    <th scope="col" className="px-3 py-2.5 font-medium">Role</th>
-                    <th scope="col" className="px-3 py-2.5 font-medium">Joined</th>
+                    <th scope="col" className="hidden px-3 py-2.5 font-medium sm:table-cell">Role</th>
+                    <th scope="col" className="hidden px-3 py-2.5 font-medium sm:table-cell">Joined</th>
                     <th scope="col" className="px-5 py-2.5"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
@@ -62,9 +65,16 @@ async function Team() {
                     const isSelf = member.userId === actor.userId;
                     const assignable = ROLES.filter((role) => canAssignRole(actor.role, member.role, role));
                     const manageable = !isSelf && assignable.length > 1;
+                    const roleControl = manageable ? (
+                      <MemberRoleForm userId={member.userId} role={member.role} assignable={assignable} />
+                    ) : (
+                      <Badge tone={member.role === "owner" ? "violet" : member.role === "admin" ? "brand" : "slate"}>
+                        {ROLE_LABELS[member.role]}
+                      </Badge>
+                    );
                     return (
                       <tr key={member.userId}>
-                        <td className="px-5 py-3">
+                        <td className="max-w-[66vw] px-4 py-3 sm:max-w-none sm:px-5">
                           <div className="flex items-center gap-3">
                             <Avatar name={member.name} />
                             <div className="min-w-0">
@@ -72,19 +82,13 @@ async function Team() {
                                 {member.name} {isSelf ? <span className="font-normal text-slate-400">(you)</span> : null}
                               </p>
                               <p className="truncate text-xs text-slate-500">{member.email}</p>
+                              {/* Phones: the role control sits under the name instead of its own column. */}
+                              <div className="mt-2 sm:hidden">{roleControl}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3">
-                          {manageable ? (
-                            <MemberRoleForm userId={member.userId} role={member.role} assignable={assignable} />
-                          ) : (
-                            <Badge tone={member.role === "owner" ? "violet" : member.role === "admin" ? "brand" : "slate"}>
-                              {ROLE_LABELS[member.role]}
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-xs whitespace-nowrap text-slate-500">{formatDate(member.joinedAt)}</td>
+                        <td className="hidden px-3 py-3 sm:table-cell">{roleControl}</td>
+                        <td className="hidden px-3 py-3 text-xs whitespace-nowrap text-slate-500 sm:table-cell">{formatDate(member.joinedAt)}</td>
                         <td className="px-5 py-3 text-right">
                           {manageable && can(actor.role, "member:remove") ? (
                             <RemoveMemberButton userId={member.userId} name={member.name} />
@@ -115,15 +119,15 @@ async function Team() {
         <Card>
           <CardHeader
             title="Roles & permissions"
-            description="The central RBAC matrix enforced by every server action and API route."
+            description="What each role can do in this workspace."
           />
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="min-w-full text-xs">
               <thead className="border-b border-slate-100 text-left text-slate-500">
                 <tr>
-                  <th scope="col" className="px-5 py-2.5 font-medium">Permission</th>
+                  <th scope="col" className="px-4 py-2.5 font-medium sm:px-5">Permission</th>
                   {ROLES.map((role) => (
-                    <th key={role} scope="col" className="px-3 py-2.5 text-center font-medium">
+                    <th key={role} scope="col" className="px-2 py-2.5 text-center font-medium sm:px-3">
                       {ROLE_LABELS[role]}
                     </th>
                   ))}
@@ -132,11 +136,11 @@ async function Team() {
               <tbody className="divide-y divide-slate-100">
                 {PERMISSIONS.map((permission) => (
                   <tr key={permission}>
-                    <th scope="row" className="px-5 py-2 text-left font-mono font-normal text-slate-700">
-                      {permission}
+                    <th scope="row" className="px-4 py-2 text-left sm:px-5 font-normal text-slate-700">
+                      {PERMISSION_LABELS[permission]}
                     </th>
                     {ROLES.map((role) => (
-                      <td key={role} className="px-3 py-2 text-center">
+                      <td key={role} className="px-2 py-2 text-center sm:px-3">
                         {can(role, permission) ? (
                           <Check className="mx-auto size-4 text-emerald-600" aria-label="Allowed" />
                         ) : (

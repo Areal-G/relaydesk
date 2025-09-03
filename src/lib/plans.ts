@@ -24,7 +24,7 @@ export const PLAN_DEFINITIONS: Record<Plan, PlanDefinition> = {
     tagline: "For freelancers getting started",
     seats: 3,
     aiRequestsPerMonth: 25,
-    features: ["Up to 3 team members", "25 AI assists / month", "Ticket audit log"],
+    features: ["Up to 3 team members", "25 AI assists / month", "Client support portal", "Ticket audit log"],
   },
   pro: {
     id: "pro",
@@ -33,7 +33,7 @@ export const PLAN_DEFINITIONS: Record<Plan, PlanDefinition> = {
     tagline: "For growing agencies",
     seats: 10,
     aiRequestsPerMonth: 500,
-    features: ["Up to 10 team members", "500 AI assists / month", "REST API & mobile app", "Priority email support"],
+    features: ["Up to 10 team members", "500 AI assists / month", "Everything in Free", "REST API access"],
   },
   business: {
     id: "business",
@@ -42,7 +42,7 @@ export const PLAN_DEFINITIONS: Record<Plan, PlanDefinition> = {
     tagline: "For multi-team agencies",
     seats: 50,
     aiRequestsPerMonth: 5000,
-    features: ["Up to 50 team members", "5,000 AI assists / month", "Datadog-ready audit exports", "SSO-ready (roadmap)"],
+    features: ["Up to 50 team members", "5,000 AI assists / month", "Everything in Pro"],
   },
 };
 

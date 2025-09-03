@@ -31,7 +31,12 @@ export async function SidebarContent() {
           <Badge tone="brand">{PLAN_LABEL[actor.plan]}</Badge>
         </div>
       </div>
-      <nav className="mt-5 flex gap-1 lg:flex-col" aria-label="Main">
+      {/* Below lg the nav is one row: it scrolls sideways (edge to edge) instead
+          of wrapping labels or pushing Billing off the screen. */}
+      <nav
+        className="-mx-4 mt-5 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden"
+        aria-label="Main"
+      >
         {nav
           .filter((item) => item.visible)
           .map(({ href, label, icon: Icon }) => (

@@ -17,7 +17,9 @@ export function ActivityFeed({
   return (
     <ol className="divide-y divide-slate-100">
       {items.map((item) => {
-        const actor = item.actorName ?? "System";
+        // Customer-originated entries have no staff actor; they carry the customer's name instead.
+        const customerName = typeof item.metadata.customerName === "string" ? item.metadata.customerName : null;
+        const actor = item.actorName ?? customerName ?? "System";
         const link = item.entityId ? ticketLinks?.get(item.entityId) : undefined;
         return (
           <li key={item.id} className="flex gap-3 px-5 py-3">

@@ -116,21 +116,22 @@ async function TicketsView({ searchParams }: { searchParams: Promise<SearchParam
         </form>
 
         <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-500">
                 <tr>
                   <th scope="col" className="px-5 py-3">Ticket</th>
-                  <th scope="col" className="px-3 py-3">Status</th>
-                  <th scope="col" className="px-3 py-3">Priority</th>
-                  <th scope="col" className="px-3 py-3">Assignee</th>
+                  {/* Phones keep ticket + updated; status moves under the subject. */}
+                  <th scope="col" className="hidden px-3 py-3 sm:table-cell">Status</th>
+                  <th scope="col" className="hidden px-3 py-3 sm:table-cell">Priority</th>
+                  <th scope="col" className="hidden px-3 py-3 md:table-cell">Assignee</th>
                   <th scope="col" className="px-5 py-3 text-right">Updated</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {result.items.map((ticket) => (
                   <tr key={ticket.id} className="group hover:bg-slate-50">
-                    <td className="max-w-md px-5 py-3">
+                    <td className="max-w-[58vw] px-5 py-3 sm:max-w-md">
                       <Link href={`/tickets/${ticket.id}`} className="block">
                         <span className="flex items-baseline gap-2">
                           <span className="font-mono text-xs text-slate-400">#{ticket.number}</span>
@@ -141,15 +142,18 @@ async function TicketsView({ searchParams }: { searchParams: Promise<SearchParam
                         <span className="mt-0.5 block truncate text-xs text-slate-500">
                           {ticket.requesterName} · {ticket.requesterEmail}
                         </span>
+                        <span className="mt-1.5 block sm:hidden">
+                          <StatusBadge status={ticket.status} />
+                        </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 sm:table-cell">
                       <StatusBadge status={ticket.status} />
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 sm:table-cell">
                       <PriorityLabel priority={ticket.priority} />
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 md:table-cell">
                       {ticket.assigneeName ? (
                         <span className="inline-flex items-center gap-2 text-slate-700">
                           <Avatar name={ticket.assigneeName} size="sm" />

@@ -4,13 +4,14 @@
  * are available to screen readers as a table.
  */
 export function CreatedPerDayChart({ data }: { data: { day: string; total: number }[] }) {
-  const max = Math.max(1, ...data.map((d) => d.total));
+  const peak = Math.max(0, ...data.map((d) => d.total));
+  const max = Math.max(1, peak);
   const label = (day: string) =>
     new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(day));
 
   return (
     <figure>
-      <div className="relative h-40" aria-hidden>
+      <div className="relative h-64" aria-hidden>
         {/* recessive gridlines at 0, 50% and 100% */}
         {[0, 50, 100].map((pct) => (
           <div key={pct} className="absolute inset-x-0 border-t border-slate-100" style={{ bottom: `${pct}%` }} />
@@ -31,7 +32,7 @@ export function CreatedPerDayChart({ data }: { data: { day: string; total: numbe
       </div>
       <div className="mt-2 flex justify-between text-[11px] text-slate-400" aria-hidden>
         <span>{label(data[0]?.day ?? "")}</span>
-        <span>Max {max} / day</span>
+        <span>{peak === 0 ? "No tickets yet" : `Busiest day: ${peak}`}</span>
         <span>{label(data.at(-1)?.day ?? "")}</span>
       </div>
       <table className="sr-only">

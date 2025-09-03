@@ -75,6 +75,14 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "removed a member";
     case "billing.plan_changed":
       return `changed the plan from ${String(metadata.from)} to ${String(metadata.to)}`;
+    case "ticket.customer_link_issued":
+      return "created a new customer link";
+    case "organization.created":
+      return "created the workspace";
+    case "ticket.customer_created":
+      return metadata.channel === "email" ? "opened the ticket by email" : "opened the ticket via the support portal";
+    case "comment.customer_reply":
+      return metadata.channel === "email" ? "replied by email" : "replied via the support portal";
     default:
       return action.replace(/[._]/g, " ");
   }

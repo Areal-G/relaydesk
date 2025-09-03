@@ -28,7 +28,7 @@ let client: Stripe | null = null;
 export function getStripe(config = getBillingConfig()): Stripe | null {
   if (!config.secretKey) return null;
   client ??= new Stripe(config.secretKey, {
-    appInfo: { name: "Relaydesk", url: "https://github.com/areal/relaydesk" },
+    appInfo: { name: "Relaydesk" },
     maxNetworkRetries: 2,
   });
   return client;

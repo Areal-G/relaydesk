@@ -88,7 +88,7 @@ async function applyEvent(tx: DbExecutor, event: Stripe.Event, priceToPlan: Pric
     case "customer.subscription.deleted": {
       const subscription = event.data.object;
       const org = await findOrgForSubscription(tx, subscription);
-      if (!org) return false;
+      if (!org || isStale(org, event)) return false;
 
       const item = subscription.items.data[0];
       const deleted = event.type === "customer.subscription.deleted";
@@ -103,6 +103,7 @@ async function applyEvent(tx: DbExecutor, event: Stripe.Event, priceToPlan: Pric
           stripeCustomerId: idOf(subscription.customer),
           stripeSubscriptionId: deleted ? null : subscription.id,
           currentPeriodEnd: item && !deleted ? new Date(item.current_period_end * 1000) : null,
+          billingEventAt: eventTime(event),
         })
         .where(eq(organizations.id, org.id));
 
@@ -121,10 +122,15 @@ async function applyEvent(tx: DbExecutor, event: Stripe.Event, priceToPlan: Pric
       const invoice = event.data.object;
       const customerId = idOf(invoice.customer);
       if (!customerId) return false;
+      const [current] = await tx
+        .select({ id: organizations.id, billingEventAt: organizations.billingEventAt })
+        .from(organizations)
+        .where(eq(organizations.stripeCustomerId, customerId));
+      if (!current || isStale(current, event)) return false;
       const [org] = await tx
         .update(organizations)
-        .set({ subscriptionStatus: "past_due" })
-        .where(eq(organizations.stripeCustomerId, customerId))
+        .set({ subscriptionStatus: "past_due", billingEventAt: eventTime(event) })
+        .where(eq(organizations.id, current.id))
         .returning({ id: organizations.id });
       if (!org) return false;
       await recordAudit(tx, { orgId: org.id, userId: null }, {
@@ -141,8 +147,21 @@ async function applyEvent(tx: DbExecutor, event: Stripe.Event, priceToPlan: Pric
   }
 }
 
+function eventTime(event: Stripe.Event): Date {
+  return new Date(event.created * 1000);
+}
+
+/**
+ * Stripe may deliver events out of order. An event created before the last
+ * one applied to this organization would roll its billing state back, so it
+ * is acknowledged and skipped. Events from the same second are applied.
+ */
+function isStale(org: { billingEventAt: Date | null }, event: Stripe.Event): boolean {
+  return org.billingEventAt !== null && eventTime(event).getTime() < org.billingEventAt.getTime();
+}
+
 async function findOrgForSubscription(tx: DbExecutor, subscription: Stripe.Subscription) {
-  const columns = { id: organizations.id, plan: organizations.plan };
+  const columns = { id: organizations.id, plan: organizations.plan, billingEventAt: organizations.billingEventAt };
   const orgId = subscription.metadata?.orgId;
   if (orgId) {
     const [org] = await tx.select(columns).from(organizations).where(eq(organizations.id, orgId));

@@ -4,14 +4,19 @@ import { authenticate } from "@/server/auth/service";
 import { API_TOKEN_TTL_SECONDS, signToken } from "@/server/auth/tokens";
 import { getDb } from "@/server/db/client";
 import { clientIp, parseJson, withApi } from "@/server/http";
-import { rateLimiters } from "@/server/rate-limit";
+import { track } from "@/server/observability/metrics";
+import { enforceLoginLimits } from "@/server/rate-limit";
 
 /** Exchanges email + password for a short-lived API bearer token (mobile app). */
 export const POST = withApi("v1.auth.login", async (request) => {
   const input = await parseJson(request, loginSchema);
-  rateLimiters.login.enforce(`login:${clientIp(request.headers)}:${input.email}`);
+  enforceLoginLimits(input.email, clientIp(request.headers));
 
-  const actor = await authenticate(await getDb(), input);
+  const actor = await authenticate(await getDb(), input).catch((error: unknown) => {
+    track.login("failure", "api");
+    throw error;
+  });
+  track.login("success", "api");
   const token = await signToken(actor, "relaydesk:api", API_TOKEN_TTL_SECONDS);
 
   return NextResponse.json({

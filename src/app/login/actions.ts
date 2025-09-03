@@ -6,9 +6,10 @@ import { loginSchema } from "@/lib/validators/auth";
 import { authenticate } from "@/server/auth/service";
 import { endSession, startSession } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
-import { AppError } from "@/server/errors";
+import { AppError, RateLimitError } from "@/server/errors";
 import { clientIp } from "@/server/http";
-import { rateLimiters } from "@/server/rate-limit";
+import { track } from "@/server/observability/metrics";
+import { enforceLoginLimits } from "@/server/rate-limit";
 
 export interface LoginState {
   error?: string;
@@ -23,11 +24,15 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
   }
 
   try {
-    rateLimiters.login.enforce(`login:${clientIp(await headers())}:${parsed.data.email}`);
+    enforceLoginLimits(parsed.data.email, clientIp(await headers()));
     const actor = await authenticate(await getDb(), parsed.data);
     await startSession(actor);
+    track.login("success", "web");
   } catch (error) {
-    if (error instanceof AppError) return { error: error.message, email };
+    if (error instanceof AppError) {
+      track.login(error instanceof RateLimitError ? "rate_limited" : "failure", "web");
+      return { error: error.message, email };
+    }
     throw error;
   }
   redirect("/dashboard");

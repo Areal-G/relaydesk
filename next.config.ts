@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  devIndicators: false,
+  // Pin the project root (a lockfile in a parent directory would otherwise be picked up).
+  outputFileTracingRoot: process.cwd(),
   // Native / WASM / auto-instrumented packages must be loaded from node_modules
   // at runtime rather than bundled, so dd-trace can patch them and PGlite can
   // find its .wasm assets.
@@ -23,6 +26,10 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  // The app has no public landing page: send visitors to the dashboard (which redirects to sign-in).
+  async redirects() {
+    return [{ source: "/", destination: "/dashboard", permanent: false }];
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

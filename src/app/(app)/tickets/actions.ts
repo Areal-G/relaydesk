@@ -7,6 +7,8 @@ import type { ActionState } from "@/lib/action-state";
 import { toActionError } from "@/server/actions";
 import { requireActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
+import { track } from "@/server/observability/metrics";
+import { issueCustomerLink } from "@/server/portal/service";
 import { addComment, createTicket, updateTicket } from "@/server/tickets/service";
 
 export async function createTicketAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -14,7 +16,9 @@ export async function createTicketAction(_previous: ActionState, formData: FormD
   let ticketId: string;
   try {
     const input = createTicketSchema.parse(Object.fromEntries(formData));
-    ticketId = (await createTicket(await getDb(), actor, input)).id;
+    const ticket = await createTicket(await getDb(), actor, input);
+    track.ticketCreated({ plan: actor.plan, priority: ticket.priority, channel: "web" });
+    ticketId = ticket.id;
   } catch (error) {
     return toActionError(error);
   }
@@ -36,6 +40,21 @@ export async function updateTicketAction(
   }
   revalidatePath(`/tickets/${ticketId}`);
   return { status: "success", message: "Ticket updated" };
+}
+
+export interface CustomerLinkState {
+  token?: string;
+  error?: string;
+}
+
+export async function issueCustomerLinkAction(ticketId: string, _previous: CustomerLinkState): Promise<CustomerLinkState> {
+  const actor = await requireActor();
+  try {
+    return { token: await issueCustomerLink(await getDb(), actor, ticketId) };
+  } catch (error) {
+    const state = toActionError(error);
+    return { error: state.status === "error" ? state.error : "Could not create the link" };
+  }
 }
 
 export async function addCommentAction(

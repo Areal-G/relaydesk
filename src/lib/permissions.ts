@@ -24,6 +24,24 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number];
 
+/** Plain-language names for the team page. */
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  "ticket:read": "View tickets",
+  "ticket:create": "Create tickets",
+  "ticket:update": "Change status, priority and customer links",
+  "ticket:assign": "Assign tickets",
+  "comment:create": "Reply to customers",
+  "comment:internal": "Write internal notes",
+  "ai:use": "Use AI assist",
+  "audit:read": "View activity history",
+  "member:read": "View the team",
+  "member:invite": "Add members",
+  "member:update_role": "Change roles",
+  "member:remove": "Remove members",
+  "billing:read": "View billing",
+  "billing:manage": "Change plan and payment details",
+};
+
 const VIEWER: readonly Permission[] = ["ticket:read", "audit:read", "member:read"];
 
 const AGENT: readonly Permission[] = [

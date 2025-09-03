@@ -52,9 +52,9 @@ export function LoginForm({ showDemoAccounts }: { showDemoAccounts: boolean }) {
 
       {showDemoAccounts ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-          <p className="text-xs font-medium text-slate-700">Demo accounts</p>
+          <p className="text-xs font-medium text-slate-700">Try the sample workspace</p>
           <p className="mt-0.5 text-xs text-slate-500">
-            Seeded locally. Password <code className="font-mono text-slate-700">{DEMO_PASSWORD}</code>. Pick a role
+            Northwind Agency, filled with sample tickets. Password <code className="font-mono text-slate-700">{DEMO_PASSWORD}</code>. Pick a role
             to see how permissions change the UI.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">

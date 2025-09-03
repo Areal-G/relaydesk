@@ -1,11 +1,12 @@
 {
-  "name": "relaydesk",
+  "name": "relaydesk-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:datadog": "NODE_OPTIONS='--import dd-trace/initialize.mjs' next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
@@ -30,6 +31,7 @@
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
     "stripe": "^23.0.0",
+    "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -44,16 +46,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.4"
   },
   "description": "Relaydesk: multi-tenant client-support portal for agencies (Next.js, PostgreSQL, Stripe, RBAC, LLM assist, Datadog).",
   
-  "author": "Areal",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/areal/relaydesk.git"
-  },
   "engines": {
     "node": ">=22"
   }

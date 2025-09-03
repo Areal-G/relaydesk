@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertOctagon, CheckCircle2, Clock, Inbox, UserCheck } from "lucide-react";
+import { AlertOctagon, CheckCircle2, Clock, ExternalLink, Inbox, UserCheck } from "lucide-react";
 import { ActivityFeed } from "@/components/activity-feed";
 import { CreatedPerDayChart } from "@/components/dashboard/created-chart";
+import { CopyField } from "@/components/portal/customer-link";
 import { PageBody, PageHeader, PageSkeleton } from "@/components/shell/page-header";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { can } from "@/lib/permissions";
 import { requireActor } from "@/server/auth/session";
+import { getAppUrl } from "@/server/config";
 import { getDb } from "@/server/db/client";
 import { getDashboardStats, memberNameMap, ticketLinkMap } from "@/server/tickets/service";
 
@@ -74,7 +76,22 @@ async function Dashboard() {
           ))}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-5">
+        <Card>
+          <CardHeader
+            title="Your support portal"
+            description="Share this page with clients. Requests they send land in Tickets, and each client gets a private link to follow replies."
+            action={
+              <Link href={`/support/${actor.orgSlug}`} target="_blank" className={buttonClasses("secondary", "sm")}>
+                <ExternalLink className="size-3.5" aria-hidden /> Open
+              </Link>
+            }
+          />
+          <div className="px-5 py-4">
+            <CopyField value={`${getAppUrl()}/support/${actor.orgSlug}`} label="Support portal link" />
+          </div>
+        </Card>
+
+        <div className="grid items-start gap-6 xl:grid-cols-5">
           <Card className="xl:col-span-3">
             <CardHeader title="Tickets created" description="Last 14 days, all channels" />
             <div className="px-5 pt-8 pb-5">
@@ -95,7 +112,7 @@ async function Dashboard() {
           </Card>
 
           <Card className="xl:col-span-2">
-            <CardHeader title="Recent activity" description="Audit log across the organization" />
+            <CardHeader title="Recent activity" description="Latest changes across your workspace" />
             <ActivityFeed items={stats.recentActivity} names={names} now={now} ticketLinks={links} />
           </Card>
         </div>

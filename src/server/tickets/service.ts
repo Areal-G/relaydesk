@@ -81,7 +81,11 @@ export type TicketListItem = Awaited<ReturnType<typeof listTickets>>["items"][nu
 export async function getTicket(db: DbExecutor, actor: Actor, ticketId: string) {
   requirePermission(actor, "ticket:read");
   const [ticket] = await db
-    .select({ ...ticketColumns, description: tickets.description })
+    .select({
+      ...ticketColumns,
+      description: tickets.description,
+      hasCustomerLink: sql<boolean>`${tickets.customerTokenHash} is not null`.mapWith(Boolean),
+    })
     .from(tickets)
     .leftJoin(users, eq(users.id, tickets.assigneeId))
     .where(and(eq(tickets.id, ticketId), eq(tickets.orgId, actor.orgId)))
@@ -118,6 +122,19 @@ async function assertAssignable(db: DbExecutor, orgId: string, userId: string) {
   if (!can(member.role, "ticket:update")) throw new ValidationError("Viewers cannot be assigned tickets");
 }
 
+/**
+ * The next per-organization ticket number. Call inside the inserting
+ * transaction: it locks the organization row so concurrent creates serialise.
+ */
+export async function nextTicketNumber(tx: DbExecutor, orgId: string): Promise<number> {
+  await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, orgId)).for("update");
+  const [{ next } = { next: 1001 }] = await tx
+    .select({ next: sql<number>`coalesce(max(${tickets.number}), 1000) + 1`.mapWith(Number) })
+    .from(tickets)
+    .where(eq(tickets.orgId, orgId));
+  return next;
+}
+
 export async function createTicket(db: DbExecutor, actor: Actor, input: CreateTicketInput) {
   requirePermission(actor, "ticket:create");
   if (input.assigneeId) {
@@ -126,18 +143,11 @@ export async function createTicket(db: DbExecutor, actor: Actor, input: CreateTi
   }
 
   return db.transaction(async (tx) => {
-    // Serialise numbering per organization: lock the org row, then take max + 1.
-    await tx.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, actor.orgId)).for("update");
-    const [{ next } = { next: 1 }] = await tx
-      .select({ next: sql<number>`coalesce(max(${tickets.number}), 1000) + 1`.mapWith(Number) })
-      .from(tickets)
-      .where(eq(tickets.orgId, actor.orgId));
-
     const [ticket] = await tx
       .insert(tickets)
       .values({
         orgId: actor.orgId,
-        number: next,
+        number: await nextTicketNumber(tx, actor.orgId),
         subject: input.subject,
         description: input.description,
         priority: input.priority,

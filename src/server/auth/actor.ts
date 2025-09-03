@@ -15,6 +15,8 @@ export interface Actor {
   email: string;
   name: string;
   orgName: string;
+  /** Public support portal path segment: /support/<orgSlug>. */
+  orgSlug: string;
   plan: Plan;
 }
 
@@ -30,6 +32,7 @@ export async function loadActor(
       role: memberships.role,
       orgId: organizations.id,
       orgName: organizations.name,
+      orgSlug: organizations.slug,
       plan: organizations.plan,
     })
     .from(memberships)

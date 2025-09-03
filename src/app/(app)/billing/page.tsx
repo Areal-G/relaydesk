@@ -54,7 +54,7 @@ async function Billing({ searchParams }: { searchParams: Promise<Record<string, 
         {!stripeReady ? (
           <p className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
             <CircleAlert className="size-4 text-slate-400" aria-hidden />
-            Demo mode: Stripe test keys aren&apos;t set, so checkout is disabled. See <code className="font-mono">.env.example</code>.
+            Online payments aren&apos;t connected yet, so plan changes are turned off for now.
           </p>
         ) : null}
 
@@ -77,7 +77,7 @@ async function Billing({ searchParams }: { searchParams: Promise<Record<string, 
             </div>
           </Card>
           <Card className="lg:col-span-2">
-            <CardHeader title="Usage this month" description="Limits are enforced server-side from your plan." />
+            <CardHeader title="Usage" description="Team seats in use, and AI assists used this calendar month." />
             <div className="grid gap-6 px-5 py-5 sm:grid-cols-2">
               <Meter label="Team seats" used={overview.usage.seatsUsed} limit={current.seats} />
               <Meter label="AI assists" used={overview.usage.aiRequestsThisMonth} limit={current.aiRequestsPerMonth} />
