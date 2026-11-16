@@ -3,7 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
 
 export type Schema = typeof schema;
-/** Driver-agnostic Drizzle handle: node-postgres in production, PGlite locally and in tests. */
+/** Driver-agnostic Drizzle handle: node-postgres or PGlite. The demo uses in-memory PGlite. */
 export type Database = PgDatabase<PgQueryResultHKT, Schema>;
 /** Either the root database or a transaction; services accept both. */
 export type DbExecutor = Pick<Database, "select" | "insert" | "update" | "delete" | "execute" | "transaction">;
@@ -52,16 +52,15 @@ export async function createDatabase(options: CreateDatabaseOptions = {}): Promi
   return { db: pgliteDb as unknown as Database, driver: "pglite", close: () => client.close() };
 }
 
-// Survive Next.js dev-server hot reloads: one connection pool / PGlite instance per process.
+// Survive Next.js dev-server hot reloads: one database per process.
 const globalForDb = globalThis as typeof globalThis & { __relaydeskDb?: Promise<DatabaseHandle> };
 
+/**
+ * Demo branch: every process gets its own in-memory database with the sample
+ * workspaces, so the app runs anywhere (including serverless) with no database.
+ */
 export function getDatabaseHandle(): Promise<DatabaseHandle> {
-  globalForDb.__relaydeskDb ??= createDatabase(
-    process.env.DATABASE_URL
-      ? { url: process.env.DATABASE_URL }
-      : // The embedded database migrates itself so `npm run dev` works with zero setup.
-        { dataDir: process.env.PGLITE_DATA_DIR ?? ".pglite", migrate: true },
-  );
+  globalForDb.__relaydeskDb ??= import("./demo").then(({ createDemoDatabase }) => createDemoDatabase());
   return globalForDb.__relaydeskDb;
 }
 

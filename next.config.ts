@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Netlify passes [build.environment] to the build only, not to server
+  // functions, so bake the public URL into the bundle.
+  env: { APP_URL: process.env.APP_URL },
   devIndicators: false,
   // Pin the project root (a lockfile in a parent directory would otherwise be picked up).
   outputFileTracingRoot: process.cwd(),
@@ -29,7 +32,11 @@ const nextConfig: NextConfig = {
   },
   // The app has no public landing page: send visitors to the dashboard (which redirects to sign-in).
   async redirects() {
-    return [{ source: "/", destination: "/dashboard", permanent: false }];
+    return [
+      { source: "/", destination: "/dashboard", permanent: false },
+      // Demo branch: accounts can't be created, since the data lives in memory.
+      { source: "/signup", destination: "/login", permanent: false },
+    ];
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

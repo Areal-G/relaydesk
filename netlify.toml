@@ -1,0 +1,14 @@
+# Portfolio demo: no database. Each server instance runs an in-memory PGlite
+# database with the real migrations and the sample workspaces (src/server/db/demo.ts).
+# Set AUTH_SECRET (32+ characters) in the Netlify UI; nothing else is needed.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  APP_URL = "https://relaydesk.arealjagema.com"
+
+[functions]
+  # Read from disk at runtime: SQL migrations and PGlite's WASM assets.
+  included_files = ["drizzle/**", "node_modules/@electric-sql/pglite/dist/**"]

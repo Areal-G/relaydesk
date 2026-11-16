@@ -12,7 +12,7 @@ A shared ticket queue with roles, a client portal, streamed AI summaries and rep
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle_+_PGlite-336791?logo=postgresql&logoColor=white)
 ![Stripe](https://img.shields.io/badge/Stripe-billing-635bff?logo=stripe&logoColor=white)
 ![Tests](https://img.shields.io/badge/Vitest-104_passing-6e9f18?logo=vitest&logoColor=white)
-![Demo](https://img.shields.io/badge/demo-5_roles-4f46e5)
+[![Live demo](https://img.shields.io/badge/demo-live-4f46e5)](https://relaydesk.arealjagema.com)
 
 [Features](#features) · [Design](#design) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [Getting started](#getting-started)
 
@@ -30,7 +30,9 @@ Locally it needs nothing but Node: the database is [PGlite](https://pglite.dev),
 
 ## Try the demo
 
-Run it locally (see [Getting started](#getting-started)) and open `/login`. The **Try the sample workspace** box fills in one-click accounts for *Northwind Agency* (Pro plan, 22 tickets, 5 members). They all use the password `relaydesk-demo`:
+> **This is the `demo` branch**, the portfolio build behind **https://relaydesk.arealjagema.com**. It needs no database: every server instance runs an in-memory PGlite database with the real migrations and the sample workspaces, with IDs made deterministic so all instances agree. Changes you make last only as long as that instance, and sign-up is turned off. The full app with PostgreSQL and `npm run seed` lives on [`main`](https://github.com/Areal-G/relaydesk/tree/main).
+
+Open the [live demo](https://relaydesk.arealjagema.com/login), or run it locally (see [Getting started](#getting-started)) and open `/login`. The **Try the sample workspace** box fills in one-click accounts for *Northwind Agency* (Pro plan, 22 tickets, 5 members). They all use the password `relaydesk-demo`:
 
 | Role | Email | What to look at |
 |---|---|---|
@@ -39,7 +41,7 @@ Run it locally (see [Getting started](#getting-started)) and open `/login`. The 
 | Agent | `aisha@northwind.test`, `marco@northwind.test` | Work tickets, internal notes, AI assist |
 | Viewer | `victor@northwind.test` | Read-only: controls are hidden or disabled and APIs return 403 |
 
-A second tenant, `gina@globex.test` (Globex Studio, Free plan), shows tenant isolation. You can also create your own workspace at `/signup` and open the client portal at `/support/northwind`.
+A second tenant, `gina@globex.test` (Globex Studio, Free plan), shows tenant isolation. You can also open the client portal at `/support/northwind`.
 
 ## Features
 
@@ -85,7 +87,7 @@ Stripe Checkout and the Customer Portal, a signature-verified, idempotent webhoo
 | **Audit trail** | Field-level changes written in the same transaction as the change itself |
 | **Mobile API** | JWT bearer auth, ticket and comment endpoints, Expo push-token registration |
 | **Observability** | `dd-trace` APM, `pino` JSON logs with trace IDs, DogStatsD metrics, and an importable Datadog dashboard |
-| **Onboarding** | `/signup` creates a workspace and its first owner |
+| **Onboarding** | `/signup` creates a workspace and its first owner (on `main`; turned off in this demo) |
 
 ## Design
 
@@ -222,24 +224,16 @@ return deps.db.transaction(async (tx) => {
 
 - Node.js 22+ and npm. Docker is optional, for real PostgreSQL.
 
-### Install, seed and run
+### Install and run
 
 ```bash
-git clone <your-fork-url> relaydesk
+git clone -b demo <your-fork-url> relaydesk
 cd relaydesk
 npm install
-cp .env.example .env.local
-```
-
-```bash
-npm run db:seed
-```
-
-```bash
 npm run dev
 ```
 
-Open `http://localhost:3000/login`. `db:seed` applies the migrations and loads the demo workspaces. PGlite allows one process at a time, so stop the dev server before seeding again. Seeding clears the database first, refuses to run with `NODE_ENV=production`, and sets all demo dates relative to the time you seed.
+Open `http://localhost:3000/login`. The in-memory database is migrated and seeded on the first request; restarting the server resets it.
 
 <details>
 <summary><b>Environment variables</b></summary>
@@ -248,8 +242,6 @@ Every variable is optional for local development.
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Production | PostgreSQL URL. When unset, PGlite in `.pglite` is used |
-| `PGLITE_DATA_DIR` | No | PGlite directory (default `.pglite`) |
 | `AUTH_SECRET` | Production | HS256 key for sessions and API tokens, 32+ characters |
 | `APP_URL` | Yes | Public base URL, used for portal links and Stripe redirects |
 | `TRUSTED_PROXY_HOPS` | No | Number of proxies in front of the app; `X-Forwarded-For` is only trusted when this is set |
@@ -258,17 +250,6 @@ Every variable is optional for local development.
 | `ANTHROPIC_API_KEY`, `AI_MODEL` | No | Real AI output (default model `claude-sonnet-5-5`) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS` | No | Billing in Stripe test or live mode |
 | `DD_ENV`, `DD_API_KEY`, `DD_AGENT_HOST`, ... | No | Datadog APM, logs and metrics |
-
-To use real PostgreSQL instead of PGlite:
-
-```bash
-docker compose up -d
-```
-
-```bash
-export DATABASE_URL=postgres://relaydesk:relaydesk@localhost:5432/relaydesk
-npm run db:migrate && npm run db:seed
-```
 
 </details>
 
@@ -284,7 +265,6 @@ npm run db:migrate && npm run db:seed
 | `npm run typecheck` | `next typegen && tsc --noEmit` |
 | `npm test` / `npm run test:watch` | Vitest |
 | `npm run db:generate` | Generate a migration from the Drizzle schema |
-| `npm run db:migrate` / `npm run db:seed` | Apply migrations / load demo data |
 
 </details>
 
@@ -352,9 +332,9 @@ npm test
 
 ## Deployment
 
-Deploy anywhere that runs Node 22 with `npm run build && npm start` (Vercel, Fly.io, a container). For production:
+The live demo deploys this branch to Netlify: `netlify.toml` sets the build, Node 22, `APP_URL` and the runtime files PGlite needs, and the only variable to set is `AUTH_SECRET`. To run Relaydesk for real, deploy the `main` branch. For production:
 
-- Point `DATABASE_URL` at PostgreSQL and run `npm run db:migrate` on release.
+- Use the `main` branch, point `DATABASE_URL` at PostgreSQL and run `npm run db:migrate` on release.
 - Set a strong `AUTH_SECRET`, the public `APP_URL`, `TRUSTED_PROXY_HOPS` for your proxy chain, and `NEXT_PUBLIC_DEMO_MODE=false`.
 - Add Stripe keys and point the webhook at `/api/stripe/webhook`.
 - Optionally set `ANTHROPIC_API_KEY`, `INBOUND_EMAIL_SECRET` and the Datadog variables; `observability/` holds an importable dashboard and monitors.
