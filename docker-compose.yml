@@ -1,7 +1,7 @@
 # Optional: run against a real PostgreSQL instead of the embedded PGlite database.
 #   docker compose up -d
 #   export DATABASE_URL=postgres://relaydesk:relaydesk@localhost:5432/relaydesk
-#   npm run db:migrate && npm run db:seed
+#   npm run db:migrate && npm run seed
 services:
   postgres:
     image: postgres:17-alpine

@@ -24,7 +24,7 @@ export function isStripeConfigured(config = getBillingConfig()): boolean {
 
 let client: Stripe | null = null;
 
-/** Lazily constructed Stripe client; `null` when billing isn't configured (local demo). */
+/** Lazily constructed Stripe client; `null` when billing isn't configured (local development). */
 export function getStripe(config = getBillingConfig()): Stripe | null {
   if (!config.secretKey) return null;
   client ??= new Stripe(config.secretKey, {

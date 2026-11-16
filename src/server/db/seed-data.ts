@@ -1,6 +1,6 @@
 import type { TicketPriority, TicketStatus } from "@/lib/domain";
 
-/** Keys into the seeded Northwind team (see DEMO_ACCOUNTS). */
+/** Keys into the seeded Northwind team (see SAMPLE_ACCOUNTS in seed-accounts.ts). */
 export type StaffKey = "olivia" | "adam" | "aisha" | "marco";
 
 export interface SeedMessage {

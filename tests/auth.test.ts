@@ -7,6 +7,7 @@ import { signToken, verifyToken } from "@/server/auth/tokens";
 import { UnauthorizedError } from "@/server/errors";
 import { changeMemberRole, removeMember } from "@/server/team/service";
 import { createTestDb, type TestDb } from "./support/db";
+import { DEFAULT_SEED_PASSWORD } from "@/server/db/seed-accounts";
 
 describe("passwords", () => {
   it("hashes with bcrypt and verifies", async () => {
@@ -53,12 +54,12 @@ describe("authentication against the database", () => {
   afterAll(() => t.handle.close());
 
   it("authenticates seeded users into their organization", async () => {
-    const actor = await authenticate(t.db, { email: "olivia@northwind.test", password: "relaydesk-demo" });
+    const actor = await authenticate(t.db, { email: "olivia@northwind.test", password: DEFAULT_SEED_PASSWORD });
     expect(actor).toMatchObject({ role: "owner", orgName: "Northwind Agency", plan: "pro" });
   });
 
   it("gives the same error for unknown emails and wrong passwords", async () => {
-    await expect(authenticate(t.db, { email: "nobody@northwind.test", password: "relaydesk-demo" })).rejects.toThrow(
+    await expect(authenticate(t.db, { email: "nobody@northwind.test", password: DEFAULT_SEED_PASSWORD })).rejects.toThrow(
       "Invalid email or password",
     );
     await expect(authenticate(t.db, { email: "olivia@northwind.test", password: "nope" })).rejects.toThrow(

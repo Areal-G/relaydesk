@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Sign in" };
 export default function LoginPage() {
   return (
     <AuthShell title="Sign in to your workspace" subtitle="Use your work email and password.">
-      <LoginForm showDemoAccounts={process.env.NEXT_PUBLIC_DEMO_MODE !== "false"} />
+      <LoginForm />
       <p className="text-center text-sm text-slate-500">
         New to Relaydesk?{" "}
         <Link href="/signup" className="font-medium text-brand-700 hover:underline">

@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
-import { DEMO_ACCOUNTS, DEMO_ORG, DEMO_PASSWORD, SECOND_DEMO_ORG, SECOND_ORG_ACCOUNT } from "@/lib/demo-accounts";
 import type { Plan, Role } from "@/lib/domain";
 import { hashPassword } from "@/server/auth/password";
 import type { Database } from "./client";
 import { aiUsage, auditLogs, memberships, organizations, ticketComments, tickets, users } from "./schema";
+import { DEFAULT_SEED_PASSWORD, SAMPLE_ACCOUNTS, SAMPLE_ORG, SECOND_ORG_ACCOUNT, SECOND_SAMPLE_ORG } from "./seed-accounts";
 import { GLOBEX_TICKETS, NORTHWIND_TICKETS, type SeedTicket, type StaffKey } from "./seed-data";
 
 const HOUR = 3_600_000;
@@ -14,16 +14,27 @@ export interface SeedResult {
   globex: { orgId: string; ownerId: string };
 }
 
+export interface SeedOptions {
+  now?: Date;
+  passwordRounds?: number;
+  /** Password for every sample account (default DEFAULT_SEED_PASSWORD). */
+  password?: string;
+  /** Replaces the Northwind owner's email and name, so you sign in with your own address. */
+  owner?: { email?: string; name?: string };
+}
+
 /**
- * Resets and loads deterministic demo data: two organizations (to show tenant
+ * Resets and loads deterministic sample data: two organizations (to show tenant
  * isolation), a user for every role, and a realistic support queue.
  */
-export async function seedDemoData(
-  db: Database,
-  options: { now?: Date; passwordRounds?: number } = {},
-): Promise<SeedResult> {
+export async function seedSampleData(db: Database, options: SeedOptions = {}): Promise<SeedResult> {
   const now = options.now ?? new Date();
-  const passwordHash = await hashPassword(DEMO_PASSWORD, options.passwordRounds);
+  const passwordHash = await hashPassword(options.password ?? DEFAULT_SEED_PASSWORD, options.passwordRounds);
+  const accounts = SAMPLE_ACCOUNTS.map((account) =>
+    account.role === "owner"
+      ? { ...account, email: options.owner?.email ?? account.email, name: options.owner?.name ?? account.name }
+      : account,
+  );
 
   return db.transaction(async (tx) => {
     await tx.execute(sql`truncate table organizations, users, stripe_events restart identity cascade`);
@@ -31,8 +42,8 @@ export async function seedDemoData(
     const [northwind] = await tx
       .insert(organizations)
       .values({
-        name: DEMO_ORG.name,
-        slug: DEMO_ORG.slug,
+        name: SAMPLE_ORG.name,
+        slug: SAMPLE_ORG.slug,
         plan: "pro" satisfies Plan,
         subscriptionStatus: "active",
         currentPeriodEnd: new Date(now.getTime() + 18 * DAY),
@@ -41,13 +52,13 @@ export async function seedDemoData(
       .returning();
     const [globex] = await tx
       .insert(organizations)
-      .values({ name: SECOND_DEMO_ORG.name, slug: SECOND_DEMO_ORG.slug, plan: "free" })
+      .values({ name: SECOND_SAMPLE_ORG.name, slug: SECOND_SAMPLE_ORG.slug, plan: "free" })
       .returning();
     if (!northwind || !globex) throw new Error("Failed to create organizations");
 
     const insertedUsers = await tx
       .insert(users)
-      .values([...DEMO_ACCOUNTS, SECOND_ORG_ACCOUNT].map(({ email, name }) => ({ email, name, passwordHash })))
+      .values([...accounts, SECOND_ORG_ACCOUNT].map(({ email, name }) => ({ email, name, passwordHash })))
       .returning({ id: users.id, email: users.email });
     const idByEmail = new Map(insertedUsers.map((u) => [u.email, u.id]));
     const userId = (email: string) => {
@@ -57,7 +68,7 @@ export async function seedDemoData(
     };
 
     await tx.insert(memberships).values([
-      ...DEMO_ACCOUNTS.map((account, index) => ({
+      ...accounts.map((account, index) => ({
         orgId: northwind.id,
         userId: userId(account.email),
         role: account.role,
@@ -66,19 +77,13 @@ export async function seedDemoData(
       { orgId: globex.id, userId: userId(SECOND_ORG_ACCOUNT.email), role: SECOND_ORG_ACCOUNT.role as Role },
     ]);
 
-    const staff: Record<StaffKey | "victor", string> = {
-      olivia: userId("olivia@northwind.test"),
-      adam: userId("adam@northwind.test"),
-      aisha: userId("aisha@northwind.test"),
-      marco: userId("marco@northwind.test"),
-      victor: userId("victor@northwind.test"),
-    };
-    const staffNames: Record<StaffKey, string> = {
-      olivia: "Olivia Bennett",
-      adam: "Adam Clarke",
-      aisha: "Aisha Khan",
-      marco: "Marco Rossi",
-    };
+    const byKey = Object.fromEntries(accounts.map((account) => [account.key, account])) as Record<
+      StaffKey | "victor",
+      (typeof accounts)[number]
+    >;
+    const staff = Object.fromEntries(
+      Object.entries(byKey).map(([key, account]) => [key, userId(account.email)]),
+    ) as Record<StaffKey | "victor", string>;
 
     async function insertQueue(orgId: string, queue: SeedTicket[], fallbackCreator: string, assignees: boolean) {
       // Oldest first so ticket numbers increase with creation time.
@@ -138,7 +143,7 @@ export async function seedDemoData(
             orgId,
             ticketId: ticket.id,
             authorId: fromStaff ? staff[message.from as StaffKey] : null,
-            authorName: fromStaff ? staffNames[message.from as StaffKey] : seed.requester[0],
+            authorName: fromStaff ? byKey[message.from as StaffKey].name : seed.requester[0],
             body: message.body,
             isInternal: message.internal ?? false,
             createdAt: at,

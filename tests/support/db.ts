@@ -1,6 +1,6 @@
 import { loadActor, type Actor } from "@/server/auth/actor";
 import { createDatabase, type Database, type DatabaseHandle } from "@/server/db/client";
-import { type SeedResult, seedDemoData } from "@/server/db/seed";
+import { type SeedResult, seedSampleData } from "@/server/db/seed";
 
 export interface TestDb {
   handle: DatabaseHandle;
@@ -9,10 +9,10 @@ export interface TestDb {
   actor: (userId: string, orgId?: string) => Promise<Actor>;
 }
 
-/** A fresh in-memory PGlite database with migrations applied and demo data loaded. */
+/** A fresh in-memory PGlite database with migrations applied and sample data loaded. */
 export async function createTestDb(): Promise<TestDb> {
   const handle = await createDatabase({ migrate: true });
-  const seed = await seedDemoData(handle.db, { passwordRounds: 4 });
+  const seed = await seedSampleData(handle.db, { passwordRounds: 4 });
   return {
     handle,
     db: handle.db,

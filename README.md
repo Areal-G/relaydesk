@@ -12,7 +12,7 @@ A shared ticket queue with roles, a client portal, streamed AI summaries and rep
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle_+_PGlite-336791?logo=postgresql&logoColor=white)
 ![Stripe](https://img.shields.io/badge/Stripe-billing-635bff?logo=stripe&logoColor=white)
 ![Tests](https://img.shields.io/badge/Vitest-104_passing-6e9f18?logo=vitest&logoColor=white)
-![Demo](https://img.shields.io/badge/demo-5_roles-4f46e5)
+[![Live demo](https://img.shields.io/badge/demo-live-4f46e5)](https://relaydesk.arealjagema.com)
 
 [Features](#features) · [Design](#design) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [Getting started](#getting-started)
 
@@ -30,7 +30,9 @@ Locally it needs nothing but Node: the database is [PGlite](https://pglite.dev),
 
 ## Try the demo
 
-Run it locally (see [Getting started](#getting-started)) and open `/login`. The **Try the sample workspace** box fills in one-click accounts for *Northwind Agency* (Pro plan, 22 tickets, 5 members). They all use the password `relaydesk-demo`:
+A live demo runs at **[relaydesk.arealjagema.com](https://relaydesk.arealjagema.com)**. Its **Try the sample workspace** box on `/login` fills in one-click accounts for *Northwind Agency* (Pro plan, 22 tickets, 5 members). The demo is built from the [`demo`](https://github.com/Areal-G/relaydesk/tree/demo) branch, which keeps its database in memory.
+
+Locally, `npm run seed` creates the same workspace (see [Getting started](#getting-started)). Every sample account uses `SEED_OWNER_PASSWORD`, or `change-me-locally` when it is unset:
 
 | Role | Email | What to look at |
 |---|---|---|
@@ -232,14 +234,14 @@ cp .env.example .env.local
 ```
 
 ```bash
-npm run db:seed
+npm run seed
 ```
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000/login`. `db:seed` applies the migrations and loads the demo workspaces. PGlite allows one process at a time, so stop the dev server before seeding again. Seeding clears the database first, refuses to run with `NODE_ENV=production`, and sets all demo dates relative to the time you seed.
+Open `http://localhost:3000/login` and sign in as `olivia@northwind.test` (or your `SEED_OWNER_EMAIL`). `npm run seed` applies the migrations and loads the sample workspaces. PGlite allows one process at a time, so stop the dev server before seeding again. Seeding clears the database first, refuses to run with `NODE_ENV=production`, and sets all sample dates relative to the time you seed.
 
 <details>
 <summary><b>Environment variables</b></summary>
@@ -253,7 +255,8 @@ Every variable is optional for local development.
 | `AUTH_SECRET` | Production | HS256 key for sessions and API tokens, 32+ characters |
 | `APP_URL` | Yes | Public base URL, used for portal links and Stripe redirects |
 | `TRUSTED_PROXY_HOPS` | No | Number of proxies in front of the app; `X-Forwarded-For` is only trusted when this is set |
-| `NEXT_PUBLIC_DEMO_MODE` | No | Shows the sample-workspace buttons on `/login`; set `false` in production |
+| `SEED_OWNER_EMAIL`, `SEED_OWNER_NAME` | No | Owner account created by `npm run seed` (default `olivia@northwind.test`) |
+| `SEED_OWNER_PASSWORD` | No | Password of every sample account (default `change-me-locally`) |
 | `INBOUND_EMAIL_SECRET` | No | Bearer secret that enables `/api/inbound/email` |
 | `ANTHROPIC_API_KEY`, `AI_MODEL` | No | Real AI output (default model `claude-sonnet-5-5`) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS` | No | Billing in Stripe test or live mode |
@@ -267,7 +270,7 @@ docker compose up -d
 
 ```bash
 export DATABASE_URL=postgres://relaydesk:relaydesk@localhost:5432/relaydesk
-npm run db:migrate && npm run db:seed
+npm run db:migrate && npm run seed
 ```
 
 </details>
@@ -284,7 +287,7 @@ npm run db:migrate && npm run db:seed
 | `npm run typecheck` | `next typegen && tsc --noEmit` |
 | `npm test` / `npm run test:watch` | Vitest |
 | `npm run db:generate` | Generate a migration from the Drizzle schema |
-| `npm run db:migrate` / `npm run db:seed` | Apply migrations / load demo data |
+| `npm run db:migrate` / `npm run seed` | Apply migrations / load sample data |
 
 </details>
 
@@ -317,7 +320,7 @@ src/
 │   ├── support/          client portal and private ticket links
 │   └── api/              v1 REST API, AI stream, Stripe webhook, inbound email
 ├── components/           UI primitives, app shell, ticket, team, billing, AI panel
-├── lib/                  permission matrix, plans, zod validators, demo accounts
+├── lib/                  permission matrix, plans, zod validators
 └── server/
     ├── auth/             passwords, JWTs, sessions, bearer auth
     ├── ai/               provider interface, Anthropic and mock providers, prompts
@@ -355,7 +358,7 @@ npm test
 Deploy anywhere that runs Node 22 with `npm run build && npm start` (Vercel, Fly.io, a container). For production:
 
 - Point `DATABASE_URL` at PostgreSQL and run `npm run db:migrate` on release.
-- Set a strong `AUTH_SECRET`, the public `APP_URL`, `TRUSTED_PROXY_HOPS` for your proxy chain, and `NEXT_PUBLIC_DEMO_MODE=false`.
+- Set a strong `AUTH_SECRET`, the public `APP_URL`, `TRUSTED_PROXY_HOPS` for your proxy chain.
 - Add Stripe keys and point the webhook at `/api/stripe/webhook`.
 - Optionally set `ANTHROPIC_API_KEY`, `INBOUND_EMAIL_SECRET` and the Datadog variables; `observability/` holds an importable dashboard and monitors.
 

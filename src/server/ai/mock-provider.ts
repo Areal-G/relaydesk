@@ -62,7 +62,7 @@ export function mockReply(context: AiTicketContext): string {
 
 /**
  * Deterministic offline provider: same ticket in, same text out. Used when
- * ANTHROPIC_API_KEY is unset so the app, demo and tests run without network.
+ * ANTHROPIC_API_KEY is unset so the app and tests run without network.
  */
 export class MockAiProvider implements AiProvider {
   readonly name = "mock";

@@ -17,6 +17,7 @@ import {
 } from "@/server/tickets/service";
 import { ticketFiltersSchema } from "@/lib/validators/tickets";
 import { createTestDb, type TestDb } from "./support/db";
+import { DEFAULT_SEED_PASSWORD } from "@/server/db/seed-accounts";
 
 /*
  * Two tenants share one database. Every read and write must be scoped to the
@@ -101,7 +102,7 @@ describe("tenant isolation", () => {
 
   it("cannot sign in to an organization the user doesn't belong to", async () => {
     await expect(
-      authenticate(t.db, { email: "aisha@northwind.test", password: "relaydesk-demo", orgId: t.seed.globex.orgId }),
+      authenticate(t.db, { email: "aisha@northwind.test", password: DEFAULT_SEED_PASSWORD, orgId: t.seed.globex.orgId }),
     ).rejects.toMatchObject({ status: 401 });
   });
 });
